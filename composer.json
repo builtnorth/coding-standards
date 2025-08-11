@@ -1,31 +1,32 @@
 {
-	"name": "builtnorth/coding-standards",
-	"description": "Built North coding standards for WordPress projects, extending WPCS with modern PHP practices",
-	"type": "phpcodesniffer-standard",
-	"license": "MIT",
-	"authors": [
-		{
-			"name": "Built North",
-			"homepage": "https://builtnorth.co"
-		}
-	],
-	"require": {
-		"php": ">=8.1",
-		"squizlabs/php_codesniffer": "^3.7",
-		"wp-coding-standards/wpcs": "^3.0",
-		"phpcompatibility/php-compatibility": "^9.0",
-		"phpcsstandards/phpcsextra": "^1.0",
-		"dealerdirect/phpcodesniffer-composer-installer": "^1.0"
-	},
-	"require-dev": {
-		"phpunit/phpunit": "^9.0"
-	},
-	"config": {
-		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
-	},
-	"scripts": {
-		"test": "phpcs --standard=BuiltNorth --version"
-	}
+  "name": "builtnorth/coding-standards",
+  "description": "Built North coding standards for WordPress projects, extending WPCS with modern PHP practices",
+  "type": "phpcodesniffer-standard",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Built North",
+      "homepage": "https://builtnorth.co"
+    }
+  ],
+  "require": {
+    "php": ">=8.1",
+    "squizlabs/php_codesniffer": "^3.7",
+    "wp-coding-standards/wpcs": "^3.0",
+    "phpcompatibility/php-compatibility": "^9.0",
+    "phpcsstandards/phpcsextra": "^1.0",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "scripts": {
+    "test": "phpcs --standard=BuiltNorth --version"
+  },
+  "version": "1.0.0"
 }
