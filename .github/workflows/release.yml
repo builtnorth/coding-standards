@@ -1,0 +1,169 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "Release version (e.g., 1.0.0)"
+                required: true
+                type: string
+            prerelease:
+                description: "Is this a pre-release?"
+                required: false
+                type: boolean
+                default: false
+
+jobs:
+    release:
+        name: Create Release
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Determine version
+              id: version
+              run: |
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                    VERSION="${{ github.event.inputs.version }}"
+                    if [[ ! "$VERSION" =~ ^v ]]; then
+                      VERSION="v$VERSION"
+                    fi
+                  else
+                    VERSION="${{ github.ref_name }}"
+                  fi
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+                  echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2"
+                  tools: composer:v2
+
+            - name: Update composer.json version
+              run: |
+                  jq '.version = "${{ steps.version.outputs.version_number }}"' composer.json > composer.tmp.json
+                  mv composer.tmp.json composer.json
+
+            - name: Commit version update
+              if: github.event_name == 'workflow_dispatch'
+              run: |
+                  git config --local user.email "action@github.com"
+                  git config --local user.name "GitHub Action"
+                  git add composer.json
+                  
+                  if ! git diff --cached --quiet; then
+                    git commit -m "chore: bump version to ${{ steps.version.outputs.version_number }}"
+                    git push origin HEAD:${{ github.ref_name }}
+                  fi
+
+            - name: Create tag
+              if: github.event_name == 'workflow_dispatch'
+              run: |
+                  git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
+                  git push origin ${{ steps.version.outputs.version }}
+
+            - name: Generate changelog
+              id: changelog
+              run: |
+                  # Get the previous tag
+                  PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ steps.version.outputs.version }}^ 2>/dev/null || echo "")
+
+                  if [ -z "$PREVIOUS_TAG" ]; then
+                    echo "No previous tag found, including all commits"
+                    COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+                  else
+                    echo "Generating changelog from $PREVIOUS_TAG to ${{ steps.version.outputs.version }}"
+                    COMMITS=$(git log ${PREVIOUS_TAG}..${{ steps.version.outputs.version }} --pretty=format:"- %s (%h)" --reverse)
+                  fi
+
+                  # Format changelog
+                  CHANGELOG="## What's Changed in Built North Coding Standards ${{ steps.version.outputs.version }}"
+                  CHANGELOG="$CHANGELOG"$'\n\n'
+
+                  # Group commits by type
+                  FEATURES=$(echo "$COMMITS" | grep -E "^- (feat|feature):" || true)
+                  FIXES=$(echo "$COMMITS" | grep -E "^- (fix|bugfix):" || true)
+                  DOCS=$(echo "$COMMITS" | grep -E "^- (docs|documentation):" || true)
+                  REFACTOR=$(echo "$COMMITS" | grep -E "^- (refactor|refactoring):" || true)
+                  CHORE=$(echo "$COMMITS" | grep -E "^- (chore|build|ci):" || true)
+                  OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|feature|fix|bugfix|docs|documentation|refactor|refactoring|chore|build|ci):" || true)
+
+                  if [ -n "$FEATURES" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Features"$'\n'"$FEATURES"$'\n'
+                  fi
+                  if [ -n "$FIXES" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Bug Fixes"$'\n'"$FIXES"$'\n'
+                  fi
+                  if [ -n "$DOCS" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Documentation"$'\n'"$DOCS"$'\n'
+                  fi
+                  if [ -n "$REFACTOR" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Refactoring"$'\n'"$REFACTOR"$'\n'
+                  fi
+                  if [ -n "$CHORE" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Maintenance"$'\n'"$CHORE"$'\n'
+                  fi
+                  if [ -n "$OTHER" ]; then
+                    CHANGELOG="$CHANGELOG"$'\n'"### Other Changes"$'\n'"$OTHER"$'\n'
+                  fi
+
+                  CHANGELOG="$CHANGELOG"$'\n'"**Full Changelog**: "
+                  if [ -n "$PREVIOUS_TAG" ]; then
+                    CHANGELOG="$CHANGELOG""https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ steps.version.outputs.version }}"
+                  else
+                    CHANGELOG="$CHANGELOG""https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.version }}"
+                  fi
+
+                  # Save to file for the release
+                  echo "$CHANGELOG" > release_notes.md
+
+            - name: Create release archive
+              run: |
+                  # Create a clean release directory
+                  mkdir -p release-archive
+
+                  # Copy only essential files
+                  cp -r BuiltNorth release-archive/
+                  cp composer.json release-archive/
+                  cp README.md release-archive/ 2>/dev/null || true
+                  cp LICENSE release-archive/ 2>/dev/null || true
+
+                  # Create zip archive
+                  cd release-archive
+                  zip -r ../builtnorth-coding-standards-${{ steps.version.outputs.version_number }}.zip .
+                  cd ..
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  tag_name: ${{ steps.version.outputs.version }}
+                  name: ${{ steps.version.outputs.version }}
+                  body_path: release_notes.md
+                  draft: false
+                  prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+                  generate_release_notes: false
+                  files: |
+                      builtnorth-coding-standards-${{ steps.version.outputs.version_number }}.zip
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Success message
+              if: success()
+              run: |
+                  echo "✅ Release created successfully!"
+                  echo ""
+                  echo "📦 The package is available on Packagist as:"
+                  echo "    builtnorth/coding-standards:${{ steps.version.outputs.version_number }}"
+                  echo ""
+                  echo "To use this version in your projects:"
+                  echo '    composer require --dev builtnorth/coding-standards:^${{ steps.version.outputs.version_number }}'
