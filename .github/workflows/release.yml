@@ -78,13 +78,17 @@ jobs:
                   CHANGELOG="## What's Changed in Built North Coding Standards ${{ steps.version.outputs.version }}"
                   CHANGELOG="$CHANGELOG"$'\n\n'
 
-                  # Group commits by type
-                  FEATURES=$(echo "$COMMITS" | grep -E "^- (feat|feature):" || true)
-                  FIXES=$(echo "$COMMITS" | grep -E "^- (fix|bugfix):" || true)
-                  DOCS=$(echo "$COMMITS" | grep -E "^- (docs|documentation):" || true)
-                  REFACTOR=$(echo "$COMMITS" | grep -E "^- (refactor|refactoring):" || true)
-                  CHORE=$(echo "$COMMITS" | grep -E "^- (chore|build|ci):" || true)
-                  OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|feature|fix|bugfix|docs|documentation|refactor|refactoring|chore|build|ci):" || true)
+                  # Group commits by type. Matches plain (fix:), scoped (fix(auth):),
+                  # and breaking (fix!:, fix(auth)!:) Conventional Commits forms —
+                  # a bare type: with no scope support silently drops scoped commits
+                  # into "Other Changes".
+                  SCOPE='(\([^)]*\))?!?'
+                  FEATURES=$(echo "$COMMITS" | grep -iE "^- (feat|feature)${SCOPE}:" || true)
+                  FIXES=$(echo "$COMMITS" | grep -iE "^- (fix|bugfix)${SCOPE}:" || true)
+                  DOCS=$(echo "$COMMITS" | grep -iE "^- (docs|documentation)${SCOPE}:" || true)
+                  REFACTOR=$(echo "$COMMITS" | grep -iE "^- (refactor|refactoring)${SCOPE}:" || true)
+                  CHORE=$(echo "$COMMITS" | grep -iE "^- (chore|build|ci)${SCOPE}:" || true)
+                  OTHER=$(echo "$COMMITS" | grep -ivE "^- (feat|feature|fix|bugfix|docs|documentation|refactor|refactoring|chore|build|ci)${SCOPE}:" || true)
 
                   if [ -n "$FEATURES" ]; then
                     CHANGELOG="$CHANGELOG"$'\n'"### Features"$'\n'"$FEATURES"$'\n'
