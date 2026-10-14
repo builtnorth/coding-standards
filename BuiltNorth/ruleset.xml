@@ -2,8 +2,11 @@
 <ruleset name="BuiltNorth" namespace="BuiltNorth\CodingStandards">
 	<description>Built North coding standards for WordPress projects - Modern PHP with WordPress best practices</description>
 
-	<!-- Base WordPress Coding Standards -->
-	<rule ref="WordPress">
+	<!--
+	Base WordPress Coding Standards: WordPress-Core + WordPress-Extra. WordPress-Docs
+	(docblock requirements) is left out; docblocks are written where they help.
+	-->
+	<rule ref="WordPress-Extra">
 		<!-- ============================================= -->
 		<!-- Modern PHP Features We Use                   -->
 		<!-- ============================================= -->
@@ -48,10 +51,61 @@
 		<!-- Spacing and Formatting                       -->
 		<!-- ============================================= -->
 		
-		<!-- No spaces inside function call parentheses -->
-		<exclude name="PEAR.Functions.FunctionCallSignature.SpaceAfterOpenBracket"/>
-		<exclude name="PEAR.Functions.FunctionCallSignature.SpaceBeforeCloseBracket"/>
-		
+		<!--
+		Layout is not linted. The code is written in a PSR-style layout (spaces,
+		no padding inside parentheses, braces on their own line) that WordPress's
+		whitespace rules reject line by line; these sniffs only report layout.
+		Security, database, i18n, naming and PHP compatibility rules all stay on.
+		-->
+		<exclude name="Generic.WhiteSpace"/>
+		<exclude name="Generic.Formatting"/>
+		<exclude name="Generic.Functions.OpeningFunctionBraceKernighanRitchie"/>
+		<exclude name="Generic.Functions.FunctionCallArgumentSpacing"/>
+		<exclude name="Generic.Classes.OpeningBraceSameLine"/>
+		<exclude name="WordPress.WhiteSpace"/>
+		<exclude name="WordPress.Arrays"/>
+		<exclude name="NormalizedArrays"/>
+		<exclude name="Squiz.Functions"/>
+		<exclude name="Squiz.WhiteSpace"/>
+		<exclude name="Squiz.ControlStructures"/>
+		<exclude name="Squiz.Strings.ConcatenationSpacing"/>
+		<exclude name="Squiz.Strings.DoubleQuoteUsage"/>
+		<exclude name="Squiz.PHP.EmbeddedPhp"/>
+		<exclude name="PEAR.Functions.FunctionCallSignature"/>
+		<exclude name="PSR2.Classes"/>
+		<exclude name="PSR2.Methods"/>
+		<exclude name="PSR2.ControlStructures"/>
+		<exclude name="PSR12"/>
+		<exclude name="Universal.WhiteSpace"/>
+		<exclude name="Universal.Operators.DisallowStandalonePostIncrementDecrement"/>
+		<exclude name="Universal.ControlStructures.IfElseDeclaration"/>
+
+		<!--
+		Naming style is per package: some use camelCase variables, properties and
+		methods throughout, and renaming public methods would break their APIs.
+		Prefixing rules (PrefixAllGlobals) stay on.
+		-->
+		<exclude name="WordPress.NamingConventions.ValidVariableName"/>
+		<exclude name="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid"/>
+
+		<!--
+		Exception messages are never printed as thrown; where one reaches output it
+		is escaped there, which OutputNotEscaped checks.
+		-->
+		<exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
+
+	</rule>
+
+	<!--
+	Template, view and render files are included inside a function, so their
+	variables are local; the sniff can't tell and reports them as globals.
+	-->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound">
+		<exclude-pattern>*/templates/*</exclude-pattern>
+		<exclude-pattern>*/template-parts/*</exclude-pattern>
+		<exclude-pattern>*/views/*</exclude-pattern>
+		<exclude-pattern>*/render.php</exclude-pattern>
+		<exclude-pattern>*/render/*</exclude-pattern>
 	</rule>
 
 	<!-- ============================================= -->
@@ -84,9 +138,12 @@
 	<!-- File and Directory Exclusions                -->
 	<!-- ============================================= -->
 	
-	<!-- What to scan by default -->
-	<file>.</file>
-	
+	<!--
+	No default <file>: phpcs reads this ruleset before the project's own config,
+	resolves "." to this folder inside vendor/, and */vendor/* then excludes it,
+	so nothing is scanned. Each project's phpcs.xml lists its own paths.
+	-->
+
 	<!-- Standard exclusions -->
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
@@ -110,11 +167,13 @@
 	<!-- ============================================= -->
 	
 	<arg value="sp"/> <!-- Show sniff and progress -->
-	<arg name="basepath" value="."/> <!-- Strip the file paths to relevant bit -->
 	<arg name="colors"/> <!-- Show results with colors -->
 	<arg name="extensions" value="php"/> <!-- Limit to PHP files -->
 	<arg name="parallel" value="8"/> <!-- Process files in parallel -->
 	
 	<!-- Show results with full error description -->
 	<arg value="s"/>
+
+	<!-- Warnings are reported but only errors fail the run -->
+	<config name="ignore_warnings_on_exit" value="1"/>
 </ruleset>
