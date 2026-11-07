@@ -59,14 +59,14 @@ vendor/bin/phpcs --standard=BuiltNorth
 
 ### Base Standards
 - WordPress Coding Standards (WPCS) 3.0+
-- PHP Compatibility checks for PHP 8.1+
+- PHP Compatibility checks for PHP 8.2+
 - PSR-1/PSR-2 file structure rules
 
 ### Modern PHP Features Allowed
 - ✅ Short array syntax `[]`
 - ✅ Short ternary operator `?:`
 - ✅ Namespaces and PSR-4 autoloading
-- ✅ Modern PHP 8.1+ features
+- ✅ Modern PHP 8.2+ features
 
 ### Excluded WordPress Rules
 - File naming conventions (we use PSR-4)
@@ -139,7 +139,7 @@ vendor/bin/phpcs --filter=GitStaged
 
 Our coding standards aim to:
 
-1. **Embrace Modern PHP**: Use PHP 8.1+ features while maintaining WordPress compatibility
+1. **Embrace Modern PHP**: Use PHP 8.2+ features while maintaining WordPress compatibility
 2. **Prioritize Readability**: Code should be self-documenting with clear naming
 3. **Support PSR-4**: Use modern autoloading instead of WordPress file naming
 4. **Balance Strictness**: Enforce important standards without being pedantic
@@ -147,7 +147,7 @@ Our coding standards aim to:
 
 ## Requirements
 
-- PHP >= 8.1
+- PHP >= 8.2
 - Composer
 - WordPress project (for context-aware rules)
 
